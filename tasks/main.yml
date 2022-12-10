@@ -1,0 +1,18 @@
+---
+
+- name: Make sure ntp is started, and is enabled on restart.
+  service: name=ntp state=started enabled=yes
+
+- name: Ensure NTP daemon is running
+  service: name="{{ ntp_daemon }}" enabled=yes
+
+- shell: ntpq -pn
+  register: ntpq_output
+
+- debug: var=ntpq_output.stdout_lines
+
+- assert:
+    that: ((hostvars[item]['cur_time_ms_string'].stdout|int - cur_time_ms_string.stdout|int) | abs) < {{ allowed_time_diff_between_servers_in_ms }}
+    msg: "Do not allow more than {{ allowed_time_diff_between_servers_in_ms }} ms diff between servers"
+  with_items: "{{ play_hosts }}"
+  run_once: true
